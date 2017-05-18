@@ -1,4 +1,4 @@
-function [X2, X3, R0] = estimatePoseMissingFeet(x, alpha)
+function [cost,X2,X3,X2b,R0,R,X3D,r,st] = estimatePoseMissingFeet(x, alpha)
 % This code estimates 3D human pose given 2D joint annotations in an image, if feet are missing.
 % For details on how does it work, please see our paper in CVPR2015, "Pose-Conditioned 
 % Joint Angle Limits for 3D Human Pose Reconstruction".
@@ -23,6 +23,7 @@ E2 = var.E2;
 bounds = var.bounds;
 
 indv = [1:12,14:16];
+%indv = [1:3,6:17]; 
 var = load('staticPose');
 a = var.a;
 di = var.di;
@@ -37,7 +38,7 @@ end
 trso = [1,2,3,6,10,14];
 exTrso = [1 2 3 6 9 10 11 14 15];     % includes head and upper-legs
 bone_Lengths = avgBone_Lengths;
-
+%bone_Lengths = 1;
 L = size(edges,1);      % L = P-1
 P = size(x,2);
 Pt = length(exTrso);
@@ -162,14 +163,22 @@ dBstar = dB(:, selectIds);
 %     R1 = estimateRotation(mut, x(:, exTrso));
 %     [X2b, signs] = jointSolve4OmegaRtyp2(Bstar, dBstar, mu, dMu, x, avgBone_Lengths, edges, zeros(maxK, 1), R1, r, indv);
 % end
-[X2b, signs] = jointSolve4OmegaRtyp2(Bstar, dBstar, mu, dMu, x, avgBone_Lengths, edges, omega, R, r, indv);
-
+[cost,X2b, signs,~,R,X3D,r] = jointSolve4OmegaRtyp2(Bstar, dBstar, mu, dMu, x, avgBone_Lengths, edges, omega, R, r, indv);
+% X2b is the 2D skeleton generated after applying rotational transform to
+% the 3D skeleton
 dZ = signs'.*abs(dZ);
 Z = estimateZ(dZ', edges', 0);
 % x = x - x(:,1)*ones(1,P);
 X2 = [x; (st*r)*Z];
 X3 = (st*r)*X2b;
 
+% figure(9)
+% viewWnS2(x, X3D, X3D, edges)
+
+
+% Xtt = R*X3;
+% figure(7)
+% view3to2(Xtt, edges);
 % X3 = r*R*Sc;
 % % X3 = imposeLengths(X3, edges, r*bone_Lengths);
 

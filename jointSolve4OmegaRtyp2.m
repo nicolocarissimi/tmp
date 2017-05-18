@@ -1,4 +1,4 @@
-function [X2b, signs, omega, R, r] = jointSolve4OmegaRtyp2(B, dB, mu, dMu, x, lengths, edges, w0, R0, r0, indv)
+function [cost,X2b, signs, omega,R,X3D, r] = jointSolve4OmegaRtyp2(B, dB, mu, dMu, x, lengths, edges, w0, R0, r0, indv)
 
 P = size(x,2);
 % dx = x(:, edges(:,1)) - x(:, edges(:,2));
@@ -7,14 +7,40 @@ avgL = 1;
 
 % options = optimoptions('fminunc', 'Display', 'iter', 'Algorithm', 'quasi-newton');
 options = optimoptions('fminunc', 'Display', 'none', 'Algorithm', 'trust-region', 'GradObj', 'on');
-
+ 
 y0 = [rodrigues(R0); r0; w0];
 [y, fval] = fminunc(@(y)costFnc(y, x, B, mu, edges, lengths, avgL, indv), y0, options);
+[f,J,reProjCost,Xt,Bw] = costFnc_ver0(y, x, B, mu, edges, lengths, avgL, indv);
+cost = sum(abs(reProjCost));
+%cost = sum(reProjCost.^2);
+cost
+
+
+%  figure(6)
+%  view3to2(Xt,edges)
+
 R = rodrigues(y(1:3));
 r = y(4);
 omega = y(5:end);
 
-X2b = R*(reshape(B*omega, 3, P) + mu);
+% To plot bases
+
+% for i = 1:15
+%     figure
+%     viewWnS2(x, reshape(B(:,i), 3, P) + mu, reshape(B(:,i), 3, P) + mu, edges)
+%     %viewWnS2(x,  mu, mu, edges)
+% end
+
+
+X3D = reshape(Bw, 3, P) + mu;
+% 
+X2b = R*(reshape(Bw, 3, P) + mu);
+
+
+
+% X3D = reshape(B*omega, 3, P) + mu;
+% 
+% X2b = R*(reshape(B*omega, 3, P) + mu); %R*3Dskeleton = 2D (first two rows of X2b are the 2D skeleton)
 signs = sign(X2b(3,edges(:,1)) - X2b(3,edges(:,2)));
 
 function [f,J] = costFnc(y, x, B, mu, edges, lengths, avgL, indv)
@@ -48,8 +74,8 @@ else
     priorCost = Inf;
 end
 % priorCost = getLogLikelihood(Xc);
-f = sum(reProjCost.^2)/avgL + sum(priorCost.^2) + beta*sum(abs(lengthCost));
-
+%f = sum(reProjCost.^2)/avgL + sum(priorCost.^2) + beta*sum(abs(lengthCost));
+f = sum(reProjCost.^2)/avgL + alpha*sum(priorCost.^2) + beta*sum(abs(lengthCost));
 if nargout>1
     P = length(indv);
     x = x(:, indv);    

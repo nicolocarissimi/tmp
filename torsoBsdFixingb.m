@@ -44,6 +44,9 @@ options = optimoptions('fminunc', 'Display', 'none', 'Algorithm', 'trust-region'
 % R = rodrigues(y);
 
 y0 = [rodrigues(R); r; omega];
+
+%beta = 3;
+%alpha = 0;
 [y, fval] = fminunc(@(y)costFnc2(y, xt, Bt, mut, Ap, trsoLengths, tEdges, avgL, alpha), y0, options);
 R = rodrigues(y(1:3));
 r = y(4);
@@ -60,8 +63,7 @@ dZt = r*dXt(3,:);
 
 function [f, J] = costFnc2(y, x, B, mu, Ap, trsoLengths, tEdges, avgL, alpha)
 
-% beta = 0.3; 
-beta = 3;
+beta = 0.3; 
 P = size(x,2);
 L = length(trsoLengths);
 k = size(B,2);
